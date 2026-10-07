@@ -1,7 +1,9 @@
 name: Deploy Subfolder to External Pages
 
 on:
-  workflow_dispatch: # Allows you to trigger this manually from the Web UI
+  workflow_dispatch: # Keeps the manual "Run workflow" button in the Web UI
+  schedule:
+    - cron: '0 0 * * 0' # Automatically runs every Sunday at 00:00 UTC (Midnight)
 
 jobs:
   build-and-deploy:
@@ -14,29 +16,29 @@ jobs:
 
       - name: Find Latest Tag and Checkout Subfolder
         run: |
-          # 1. Get the latest semantic tag name
-          LATEST_TAG=\$(git describe --tags `git rev-list --tags --max-count=1`)
-          echo "Latest found tag: \$LATEST_TAG"
+          # 1. Get the latest semantic tag name safely
+          LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+          echo "Latest found tag: $LATEST_TAG"
           
           # 2. Force checkout to match that tag exactly
-          git checkout \$LATEST_TAG
+          git checkout $LATEST_TAG
           
           # 3. Target your specific directory
           TARGET_DIR="osfmk/man" 
           
-          if [ ! -d "\$TARGET_DIR" ]; then
-            echo "Error: Directory '\$TARGET_DIR' does not exist."
+          if [ ! -d "$TARGET_DIR" ]; then
+            echo "Error: Directory '$TARGET_DIR' does not exist."
             exit 1
           fi
           
           # Pass the confirmed path down to the deployment step
-          echo "DEPLOY_PATH=\(TARGET_DIR" >> \)GITHUB_ENV
+          echo "DEPLOY_PATH=$TARGET_DIR" >> $GITHUB_ENV
 
       - name: Deploy to External Repository Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
-          personal_token: \${{ secrets.PAGES_DEPLOY_TOKEN }}
+          personal_token: ${{ secrets.PAGES_DEPLOY_TOKEN }}
           # CHANGE THIS to your personal GitHub username and target repo name
           external_repository: QuintenJohnson/mach-docs 
           publish_branch: gh-pages
-          publish_dir: \${{ env.DEPLOY_PATH }}
+          publish_dir: ${{ env.DEPLOY_PATH }}
