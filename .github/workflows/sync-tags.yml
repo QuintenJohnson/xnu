@@ -31,7 +31,7 @@ jobs:
           echo "Found upstream repository: $UPSTREAM_REPO"
           
           # 2. Add the upstream remote using the discovered repository name
-          git remote add upstream https://github.com{UPSTREAM_REPO}.git
+          git remote add upstream https://github.com${UPSTREAM_REPO}.git
           
           # 3. Fetch the tags from upstream and push them to your fork
           git fetch --tags upstream
