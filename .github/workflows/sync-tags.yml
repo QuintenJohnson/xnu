@@ -1,0 +1,38 @@
+name: Auto Sync Upstream Tags
+
+on:
+  workflow_dispatch: # Adds a manual "Run workflow" button in the web UI
+  schedule:
+    - cron: '0 0 * * *' # Automatically runs every night at midnight
+
+jobs:
+  sync-tags:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to push tags back to your fork
+    steps:
+      - name: Checkout Fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch and Sync Upstream Tags
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 1. Query the GitHub API to find the original upstream repository
+          UPSTREAM_REPO=$(gh api repos/${{ github.repository }} --jq '.parent.full_name')
+          
+          if [ "$UPSTREAM_REPO" = "null" ] || [ -z "$UPSTREAM_REPO" ]; then
+            echo "Error: This repository does not appear to be a fork."
+            exit 1
+          fi
+          
+          echo "Found upstream repository: $UPSTREAM_REPO"
+          
+          # 2. Add the upstream remote using the discovered repository name
+          git remote add upstream https://github.com{UPSTREAM_REPO}.git
+          
+          # 3. Fetch the tags from upstream and push them to your fork
+          git fetch --tags upstream
+          git push origin --tags
